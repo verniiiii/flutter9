@@ -5,7 +5,6 @@ import '../../../../core/constants/categories.dart';
 part 'transaction_store.g.dart';
 
 class TransactionStore = _TransactionStore with _$TransactionStore;
-
 abstract class _TransactionStore with Store {
   @observable
   ObservableList<Transaction> transactions = ObservableList<Transaction>.of([
@@ -29,12 +28,10 @@ abstract class _TransactionStore with Store {
     ),
     // остальные транзакции из вашего репозитория
   ]);
-
   @action
   void addTransaction(Transaction transaction) {
     transactions.add(transaction);
   }
-
   @action
   void updateTransaction(String id, Transaction updatedTransaction) {
     final index = transactions.indexWhere((transaction) => transaction.id == id);
@@ -42,7 +39,6 @@ abstract class _TransactionStore with Store {
       transactions[index] = updatedTransaction.copyWith(id: id);
     }
   }
-
   @action
   void deleteTransaction(String id) {
     transactions.removeWhere((transaction) => transaction.id == id);
@@ -58,17 +54,14 @@ abstract class _TransactionStore with Store {
       );
     }
   }
-
   @computed
   double get totalIncome => transactions
       .where((transaction) => transaction.isIncome)
       .fold(0.0, (sum, transaction) => sum + transaction.amount);
-
   @computed
   double get totalExpenses => transactions
       .where((transaction) => transaction.isExpense)
       .fold(0.0, (sum, transaction) => sum + transaction.amount);
-
   @computed
   double get balance => totalIncome - totalExpenses;
 }
