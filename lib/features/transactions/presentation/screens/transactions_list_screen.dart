@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:get_it/get_it.dart';
 import '../widgets/transaction_list.dart';
 import '../../data/transaction_model.dart';
 import '../../../../core/constants/categories.dart';
-import '../../../../core/transaction_inherited.dart';
 import 'transaction_form_screen.dart';
 import 'edit_transaction_screen.dart';
 import 'statistics_screen.dart';
 import '../../../../features/profile/presentation/screens/profile_screen.dart';
-import '../../../../features/transactions/data/transaction_repository.dart';
-import 'package:get_it/get_it.dart';
-
+import '../../../../features/transactions/data/transaction_store.dart';
 
 class TransactionsListScreen extends StatefulWidget {
   const TransactionsListScreen({super.key});
@@ -23,32 +22,24 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
   String _selectedCategory = 'Все категории';
   String _searchQuery = '';
 
+  late TransactionStore _store; // Добавляем поле store
+
+  @override
+  void initState() {
+    super.initState();
+    _store = GetIt.I<TransactionStore>(); // Инициализируем в initState
+  }
+
   void _addTransaction() {
     context.push('/add');
   }
 
   void _toggleTransaction(String id) {
-    setState(() {
-      GetIt.I<TransactionRepository>().toggleTransactionType(id);
-    });
+    _store.toggleTransactionType(id); // Заменяем вызов репозитория
   }
 
   void _deleteTransaction(String id) {
-    setState(() {
-      GetIt.I<TransactionRepository>().deleteTransaction(id);
-    });
-  }
-
-  double get _totalIncome {
-    return GetIt.I<TransactionRepository>().getTotalIncome();
-  }
-
-  double get _totalExpenses {
-    return GetIt.I<TransactionRepository>().getTotalExpenses();
-  }
-
-  double get _balance {
-    return GetIt.I<TransactionRepository>().getBalance();
+    _store.deleteTransaction(id); // Заменяем вызов репозитория
   }
 
   void _editTransaction(Transaction transaction) {
@@ -68,11 +59,10 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
   }
 
   List<Transaction> get _filteredTransactions {
-    final allTransactions = GetIt.I<TransactionRepository>().transactions;
-
-    return allTransactions.where((transaction) {
-      final matchesQuery = transaction.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          transaction.description.toLowerCase().contains(_searchQuery.toLowerCase());
+    return _store.transactions.where((transaction) { // Используем store.transactions
+      final matchesQuery =
+          transaction.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              transaction.description.toLowerCase().contains(_searchQuery.toLowerCase());
 
       final matchesCategory = _selectedCategory == 'Все категории' ||
           transaction.category == _selectedCategory;
@@ -143,15 +133,17 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
             ),
           ),
           Expanded(
-            child: TransactionList(
-              transactions: _filteredTransactions,
-              onToggle: _toggleTransaction,
-              onDelete: _deleteTransaction,
-              onEdit: _editTransaction,
-              onDetails: _showTransactionDetails,
-              totalIncome: _totalIncome,
-              totalExpenses: _totalExpenses,
-              balance: _balance,
+            child: Observer( // Добавляем Observer для реактивных обновлений
+              builder: (_) => TransactionList(
+                transactions: _filteredTransactions,
+                onToggle: _toggleTransaction,
+                onDelete: _deleteTransaction,
+                onEdit: _editTransaction,
+                onDetails: _showTransactionDetails,
+                totalIncome: _store.totalIncome, // Используем computed свойства из store
+                totalExpenses: _store.totalExpenses,
+                balance: _store.balance,
+              ),
             ),
           ),
         ],

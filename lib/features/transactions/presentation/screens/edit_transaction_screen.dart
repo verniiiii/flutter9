@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:get_it/get_it.dart';
 import '../../data/transaction_model.dart';
 import '../../../../core/constants/categories.dart';
-import '../../../../core/transaction_inherited.dart';
-import '../../../../features/transactions/data/transaction_repository.dart';
-import 'package:get_it/get_it.dart';
+import '../../data/transaction_store.dart';
 
 class EditTransactionScreen extends StatefulWidget {
   final Transaction transaction;
@@ -26,10 +26,12 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
 
   late TransactionType _type;
   late String _selectedCategory;
+  late TransactionStore _store;
 
   @override
   void initState() {
     super.initState();
+    _store = GetIt.I<TransactionStore>();
     _titleController.text = widget.transaction.title;
     _descriptionController.text = widget.transaction.description;
     _amountController.text = widget.transaction.amount.toStringAsFixed(2);
@@ -55,11 +57,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       category: _selectedCategory,
     );
 
-    GetIt.I<TransactionRepository>().updateTransaction(
-      widget.transaction.id,
-      updatedTransaction,
-    );
-
+    _store.updateTransaction(widget.transaction.id, updatedTransaction);
     widget.onUpdate(updatedTransaction);
     Navigator.pop(context);
   }
