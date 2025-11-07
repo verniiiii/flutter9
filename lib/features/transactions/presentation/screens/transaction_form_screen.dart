@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import '../../data/transaction_model.dart';
 import '../../../../core/constants/categories.dart';
-import '../../../../core/transaction_inherited.dart';
-import '../../../../features/transactions/data/transaction_repository.dart';
-import 'package:get_it/get_it.dart';
+import '../../data/transaction_store.dart';
 
 class TransactionFormScreen extends StatefulWidget {
   final void Function(Transaction) onSave;
@@ -21,6 +21,15 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   TransactionType _type = TransactionType.expense;
   String _selectedCategory = 'Продукты';
+
+  late TransactionStore _store; // Добавляем поле store
+
+  @override
+  void initState() {
+    super.initState();
+    _store = GetIt.I<TransactionStore>(); // Инициализируем в initState
+    _selectedCategory = TransactionCategories.getDefaultCategoryForType(_type);
+  }
 
   void _submit() {
     final title = _titleController.text.trim();
@@ -42,7 +51,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       category: _selectedCategory,
     );
 
-    GetIt.I<TransactionRepository>().addTransaction(newTransaction);
+    _store.addTransaction(newTransaction); // Заменяем вызов репозитория
     widget.onSave(newTransaction);
 
     Navigator.pop(context);
@@ -55,12 +64,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         backgroundColor: Colors.red,
       ),
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedCategory = TransactionCategories.getDefaultCategoryForType(_type);
   }
 
   @override

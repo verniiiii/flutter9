@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:collection/collection.dart';
-import '../../data/transaction_model.dart';
+import 'package:flutter_mobx/flutter_mobx.dart'; // Добавляем импорт для Observer
 import '../../../../core/constants/categories.dart';
-import '../../../../core/transaction_inherited.dart';
-import '../../../../features/transactions/data/transaction_repository.dart';
+import '../../data/transaction_store.dart';
 import 'package:get_it/get_it.dart';
 
 class StatisticsScreen extends StatelessWidget {
@@ -12,10 +11,10 @@ class StatisticsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final transactions = GetIt.I<TransactionRepository>().transactions;
+    final store = GetIt.I<TransactionStore>(); // Получаем store через GetIt
 
     Map<String, double> _getCategoryStats(TransactionType type) {
-      final filtered = transactions.where((t) => t.type == type).toList();
+      final filtered = store.transactions.where((t) => t.type == type).toList(); // Используем store.transactions
       final grouped = groupBy(filtered, (t) => t.category);
 
       return grouped.map((category, transactions) => MapEntry(
@@ -25,67 +24,72 @@ class StatisticsScreen extends StatelessWidget {
     }
 
     double _getTotal(TransactionType type) {
-      return transactions
+      return store.transactions // Используем store.transactions
           .where((t) => t.type == type)
           .fold(0.0, (sum, t) => sum + t.amount);
     }
 
-    final incomeStats = _getCategoryStats(TransactionType.income);
-    final expenseStats = _getCategoryStats(TransactionType.expense);
-    final totalIncome = _getTotal(TransactionType.income);
-    final totalExpenses = _getTotal(TransactionType.expense);
+    return Observer( // Оборачиваем в Observer для реактивных обновлений
+      builder: (_) {
+        final incomeStats = _getCategoryStats(TransactionType.income);
+        final expenseStats = _getCategoryStats(TransactionType.expense);
+        final totalIncome = store.totalIncome; // Используем computed свойства из store
+        final totalExpenses = store.totalExpenses;
+        final balance = store.balance;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Статистика'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(), // ВЕРТИКАЛЬНЫЙ ВОЗВРАТ
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Сводка
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    Text(
-                      'Общая статистика',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Статистика'),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => context.pop(), // ВЕРТИКАЛЬНЫЙ ВОЗВРАТ
+            ),
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                // Сводка
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
                       children: [
-                        _buildStatItem('Доходы', '${totalIncome.toStringAsFixed(2)} ₽', Colors.green),
-                        _buildStatItem('Расходы', '${totalExpenses.toStringAsFixed(2)} ₽', Colors.red),
-                        _buildStatItem('Баланс', '${(totalIncome - totalExpenses).toStringAsFixed(2)} ₽',
-                            (totalIncome - totalExpenses) >= 0 ? Colors.green : Colors.red),
+                        Text(
+                          'Общая статистика',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildStatItem('Доходы', '${totalIncome.toStringAsFixed(2)} ₽', Colors.green),
+                            _buildStatItem('Расходы', '${totalExpenses.toStringAsFixed(2)} ₽', Colors.red),
+                            _buildStatItem('Баланс', '${balance.toStringAsFixed(2)} ₽',
+                                balance >= 0 ? Colors.green : Colors.red),
+                          ],
+                        ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 20),
+
+                // Статистика по доходам
+                _buildCategorySection('Доходы по категориям', incomeStats, totalIncome, Colors.green),
+                const SizedBox(height: 20),
+
+                // Статистика по расходам
+                _buildCategorySection('Расходы по категориям', expenseStats, totalExpenses, Colors.red),
+              ],
             ),
-            const SizedBox(height: 20),
-
-            // Статистика по доходам
-            _buildCategorySection('Доходы по категориям', incomeStats, totalIncome, Colors.green),
-            const SizedBox(height: 20),
-
-            // Статистика по расходам
-            _buildCategorySection('Расходы по категориям', expenseStats, totalExpenses, Colors.red),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
