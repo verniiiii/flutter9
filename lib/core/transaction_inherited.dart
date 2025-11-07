@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import '../features/transactions/data/transaction_repository.dart';
+import '../features/transactions/data/transaction_store.dart'; // Заменяем импорт
 
 class TransactionInherited extends InheritedWidget {
-  final TransactionRepository repository;
+  final TransactionStore store; // Меняем repository на store
 
   const TransactionInherited({
     super.key,
-    required this.repository,
+    required this.store, // Меняем repository на store
     required super.child,
   });
 
