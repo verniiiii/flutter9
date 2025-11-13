@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:get_it/get_it.dart';
+import 'package:mobx/mobx.dart';
 import '../../data/transaction_model.dart';
-import '../../data/transaction_store.dart'; // Добавляем импорт store
 
 class TransactionRow extends StatelessWidget {
   final Transaction transaction;
@@ -22,12 +22,12 @@ class TransactionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = GetIt.I<TransactionStore>(); // Получаем store через GetIt
+    final transactions = GetIt.I<ObservableList<Transaction>>(); // Получаем общий ObservableList
 
     return Observer( // Оборачиваем в Observer для реактивных обновлений
       builder: (_) {
-        // Получаем актуальную транзакцию из store
-        final currentTransaction = store.transactions.firstWhere(
+        // Получаем актуальную транзакцию из общего списка
+        final currentTransaction = transactions.firstWhere(
               (t) => t.id == transaction.id,
           orElse: () => transaction,
         );
@@ -67,7 +67,7 @@ class TransactionRow extends StatelessWidget {
   }
 
   void _showOptions(BuildContext context, Transaction transaction) {
-    final store = GetIt.I<TransactionStore>(); // Получаем store для использования в методах
+    final transactions = GetIt.I<ObservableList<Transaction>>(); // Получаем общий ObservableList
 
     showModalBottomSheet(
       context: context,
@@ -84,7 +84,7 @@ class TransactionRow extends StatelessWidget {
           ),
           Observer( // Observer для кнопки переключения типа
             builder: (_) {
-              final currentTransaction = store.transactions.firstWhere(
+              final currentTransaction = transactions.firstWhere(
                     (t) => t.id == transaction.id,
                 orElse: () => transaction,
               );
