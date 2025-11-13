@@ -1,39 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:collection/collection.dart';
-import 'package:flutter_mobx/flutter_mobx.dart'; // Добавляем импорт для Observer
-import '../../../../core/constants/categories.dart';
-import '../../data/transaction_store.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:get_it/get_it.dart';
+import '../../../../core/constants/categories.dart';
+import '../../data/statistics_store.dart'; // Заменяем импорт
 
 class StatisticsScreen extends StatelessWidget {
   const StatisticsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final store = GetIt.I<TransactionStore>(); // Получаем store через GetIt
-
-    Map<String, double> _getCategoryStats(TransactionType type) {
-      final filtered = store.transactions.where((t) => t.type == type).toList(); // Используем store.transactions
-      final grouped = groupBy(filtered, (t) => t.category);
-
-      return grouped.map((category, transactions) => MapEntry(
-        category,
-        transactions.fold(0.0, (sum, t) => sum + t.amount),
-      ));
-    }
-
-    double _getTotal(TransactionType type) {
-      return store.transactions // Используем store.transactions
-          .where((t) => t.type == type)
-          .fold(0.0, (sum, t) => sum + t.amount);
-    }
+    final store = GetIt.I<StatisticsStore>(); // Меняем на StatisticsStore
 
     return Observer( // Оборачиваем в Observer для реактивных обновлений
       builder: (_) {
-        final incomeStats = _getCategoryStats(TransactionType.income);
-        final expenseStats = _getCategoryStats(TransactionType.expense);
-        final totalIncome = store.totalIncome; // Используем computed свойства из store
+        // Используем computed свойства из StatisticsStore
+        final incomeStats = store.incomeStats;
+        final expenseStats = store.expenseStats;
+        final totalIncome = store.totalIncome;
         final totalExpenses = store.totalExpenses;
         final balance = store.balance;
 
@@ -42,13 +26,51 @@ class StatisticsScreen extends StatelessWidget {
             title: const Text('Статистика'),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
-              onPressed: () => context.pop(), // ВЕРТИКАЛЬНЫЙ ВОЗВРАТ
+              onPressed: () => context.pop(),
             ),
           ),
           body: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
+                // Поиск и фильтрация
+                Observer(
+                  builder: (_) => Column(
+                    children: [
+                      TextField(
+                        decoration: const InputDecoration(
+                          labelText: 'Поиск транзакций',
+                          prefixIcon: Icon(Icons.search),
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (value) => store.setSearchQuery(value),
+                      ),
+                      const SizedBox(height: 10),
+                      DropdownButtonFormField<String>(
+                        value: store.selectedCategory,
+                        decoration: const InputDecoration(
+                          labelText: 'Категория',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          'Все категории',
+                          ...TransactionCategories.incomeCategories,
+                          ...TransactionCategories.expenseCategories,
+                        ].map((String category) {
+                          return DropdownMenuItem<String>(
+                            value: category,
+                            child: Text(category),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          store.setSelectedCategory(newValue!);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
                 // Сводка
                 Card(
                   child: Padding(
@@ -132,12 +154,18 @@ class StatisticsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            ...stats.entries.map((entry) => _buildCategoryRow(
-              entry.key,
-              entry.value,
-              total,
-              color,
-            )).toList(),
+            if (stats.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child: Text('Нет данных для отображения'),
+              )
+            else
+              ...stats.entries.map((entry) => _buildCategoryRow(
+                entry.key,
+                entry.value,
+                total,
+                color,
+              )).toList(),
           ],
         ),
       ),
