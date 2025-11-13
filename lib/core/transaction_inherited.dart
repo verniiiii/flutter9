@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import '../features/transactions/data/transaction_store.dart'; // Заменяем импорт
+import 'package:mobx/mobx.dart';
+import 'package:get_it/get_it.dart';
+import '../features/transactions/data/transaction_model.dart';
 
 class TransactionInherited extends InheritedWidget {
-  final TransactionStore store; // Меняем repository на store
+  final ObservableList<Transaction> transactions; // Используем общий ObservableList
 
   const TransactionInherited({
     super.key,
-    required this.store, // Меняем repository на store
+    required this.transactions,
     required super.child,
   });
 
@@ -19,6 +21,6 @@ class TransactionInherited extends InheritedWidget {
 
   @override
   bool updateShouldNotify(TransactionInherited oldWidget) {
-    return false;
+    return oldWidget.transactions != transactions;
   }
 }
