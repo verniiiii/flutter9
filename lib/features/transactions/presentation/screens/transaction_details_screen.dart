@@ -3,42 +3,22 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:get_it/get_it.dart';
 import '../../data/transaction_model.dart';
-import '../../data/transaction_store.dart'; // Добавляем импорт store
+import '../../data/transaction_details_store.dart';
 import '../../../../core/constants/categories.dart';
 
-class TransactionDetailsScreen extends StatefulWidget {
+class TransactionDetailsScreen extends StatelessWidget {
   final String transactionId;
 
   const TransactionDetailsScreen({super.key, required this.transactionId});
 
   @override
-  State<TransactionDetailsScreen> createState() => _TransactionDetailsScreenState();
-}
-
-class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
-  late TransactionStore _store; // Добавляем поле store
-
-  @override
-  void initState() {
-    super.initState();
-    _store = GetIt.I<TransactionStore>(); // Инициализируем в initState
-  }
-
-  // Метод для получения транзакции по ID из store
-  Transaction? _getTransactionById(String id) {
-    try {
-      return _store.transactions.firstWhere((transaction) => transaction.id == id);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Observer( // Оборачиваем в Observer для реактивных обновлений
+    final store = GetIt.I<TransactionDetailsStore>();
+
+    return Observer(
       builder: (_) {
-        // Получаем транзакцию из store по ID
-        final transaction = _getTransactionById(widget.transactionId);
+        // Получаем транзакцию из store по ID используя computed свойство
+        final transaction = store.getTransactionById(transactionId);
 
         // Если транзакция не найдена, показываем заглушку
         if (transaction == null) {
@@ -62,7 +42,6 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () {
-                // ГОРИЗОНТАЛЬНАЯ НАВИГАЦИЯ - возврат с заменой
                 context.go('/');
               },
             ),
@@ -78,14 +57,18 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          transaction.title,
-                          style: Theme.of(context).textTheme.headlineSmall,
+                        Observer(
+                          builder: (_) => Text(
+                            transaction.title,
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          transaction.description,
-                          style: Theme.of(context).textTheme.bodyMedium,
+                        Observer(
+                          builder: (_) => Text(
+                            transaction.description,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Row(
@@ -95,12 +78,14 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                               'Сумма:',
                               style: Theme.of(context).textTheme.bodyLarge,
                             ),
-                            Text(
-                              '${transaction.amount.toStringAsFixed(2)} ₽',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: transaction.isIncome ? Colors.green : Colors.red,
+                            Observer(
+                              builder: (_) => Text(
+                                '${transaction.amount.toStringAsFixed(2)} ₽',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: transaction.isIncome ? Colors.green : Colors.red,
+                                ),
                               ),
                             ),
                           ],
@@ -113,9 +98,11 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                               'Категория:',
                               style: Theme.of(context).textTheme.bodyLarge,
                             ),
-                            Text(
-                              transaction.category,
-                              style: Theme.of(context).textTheme.bodyMedium,
+                            Observer(
+                              builder: (_) => Text(
+                                transaction.category,
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
                             ),
                           ],
                         ),
@@ -127,9 +114,11 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                               'Тип:',
                               style: Theme.of(context).textTheme.bodyLarge,
                             ),
-                            Text(
-                              transaction.type.displayName,
-                              style: Theme.of(context).textTheme.bodyMedium,
+                            Observer(
+                              builder: (_) => Text(
+                                transaction.type.displayName,
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
                             ),
                           ],
                         ),
@@ -141,9 +130,11 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                               'Дата:',
                               style: Theme.of(context).textTheme.bodyLarge,
                             ),
-                            Text(
-                              '${transaction.createdAt.day}.${transaction.createdAt.month}.${transaction.createdAt.year}',
-                              style: Theme.of(context).textTheme.bodyMedium,
+                            Observer(
+                              builder: (_) => Text(
+                                '${transaction.createdAt.day}.${transaction.createdAt.month}.${transaction.createdAt.year}',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
                             ),
                           ],
                         ),
@@ -155,7 +146,6 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                 Center(
                   child: ElevatedButton(
                     onPressed: () {
-                      // Демонстрация навигации назад
                       context.pop();
                     },
                     child: const Text('Назад (Pop)'),
