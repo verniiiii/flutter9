@@ -26,6 +26,15 @@ abstract class _TransactionStore with Store {
       type: TransactionType.expense,
       category: 'Продукты',
     ),
+    Transaction(
+      id: '3',
+      title: 'сумка',
+      description: '',
+      amount: 15000,
+      createdAt: DateTime.now().subtract(const Duration(days: 1)),
+      type: TransactionType.expense,
+      category: 'Одежда',
+    ),
     // остальные транзакции из вашего репозитория
   ]);
   @action
